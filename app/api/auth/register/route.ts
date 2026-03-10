@@ -2,11 +2,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("Registration body parse error:", e);
+      return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
+    }
+
+    const { email, password, name } = body;
 
     if (!email || !password || !name) {
+      console.error("Registration missing fields:", { email, name, hasPassword: !!password });
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -38,10 +49,10 @@ export async function POST(req: Request) {
       { message: "User created successfully", user: { id: newUser.id, email: newUser.email } },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Registration error:", error);
+  } catch (error: any) {
+    console.error("REGISTRATION_ERROR:", error);
     return NextResponse.json(
-      { message: "An error occurred during registration" },
+      { message: error?.message || "An error occurred during registration" },
       { status: 500 }
     );
   }
