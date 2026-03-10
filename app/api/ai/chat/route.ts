@@ -4,11 +4,6 @@ import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
 
-// Optional: Fallback initialization if key is missing during build/dev
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "dummy",
-});
-
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -17,15 +12,29 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { messages, context } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return new NextResponse("Invalid JSON", { status: 400 });
+    }
+
+    const { messages, context } = body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return new NextResponse("Messages are required", { status: 400 });
+    }
 
     if (!process.env.OPENAI_API_KEY) {
-      // Mock response if no key is provided yet
       return NextResponse.json({
         role: "assistant",
-        content: `(Mock AI Response) I see you are asking about: "${messages[messages.length - 1].content}". \n\nI can help you summarize or generate ideas based on your note context once you provide an OpenAI API key in the .env file!`,
+        content: `(Mock AI Response) I see you are asking about: "${messages[messages.length - 1]?.content || 'nothing'}". \n\nI can help you summarize or generate ideas based on your note context once you provide an OpenAI API key in the .env file!`,
       });
     }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
