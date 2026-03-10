@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String       @id @default(cuid())
+  name            String?
+  email           String       @unique
+  password_hash   String?
+  profile_picture String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  notes           Note[]
+  folders         Folder[]
+  tags            Tag[]
+  aiChats         AIChat[]
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     Note[]
+}
+
+model Note {
+  id         String   @id @default(cuid())
+  userId     String
+  folderId   String?
+  title      String
+  content    String?  // Rich text or markdown
+  isPinned   Boolean  @default(false)
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder     Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags       NoteTag[]
+  aiChats    AIChat[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     NoteTag[]
+
+  @@unique([userId, name])
+}
+
+model NoteTag {
+  noteId String
+  tagId  String
+
+  note   Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+}
+
+model AIChat {
+  id          String   @id @default(cuid())
+  userId      String
+  noteId      String?
+  userMessage String
+  aiResponse  String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note        Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+}
