@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import OpenAI from "openai";
 
+export const dynamic = "force-dynamic";
+
 // Optional: Fallback initialization if key is missing during build/dev
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "dummy",
